@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mischungsverhältnis</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --card:#fff; --ink:#1f2933; --muted:#6b7280; --line:#e5e1d8;
+    --c1:#d9822b; --c2:#3b82c4; --c3:#c2410c; --c4:#6d9f3a; --accent:#1f2933;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--accent);color:#fff}
+  header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:.3px}
+  .help-btn{background:#fff;color:var(--accent);border:0;border-radius:50%;width:32px;height:32px;font-weight:700;font-size:16px;cursor:pointer}
+  main{max-width:1100px;margin:0 auto;padding:18px;display:grid;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card h2{margin:0 0 12px;font-size:16px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1fr 260px;gap:18px;align-items:start}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}.cupwrap{justify-self:center}}
+  .mode{display:flex;gap:8px;flex-wrap:wrap}
+  .mode label{flex:1;min-width:150px;border:2px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;gap:8px;align-items:center;font-weight:600}
+  .mode input{accent-color:var(--accent);width:18px;height:18px}
+  .mode label:has(input:checked){border-color:var(--accent);background:#f3f4f6}
+  .comp{display:grid;grid-template-columns:14px 1fr 120px 46px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .comp:last-of-type{border-bottom:0}
+  .dot{width:14px;height:14px;border-radius:4px}
+  .comp .lbl small{display:block;color:var(--muted);font-size:12px}
+  .comp .lbl b{font-size:15px}
+  .comp input[type=text]{width:100%;padding:9px 10px;border:1px solid #cfcabe;border-radius:8px;font-size:16px;text-align:right}
+  .comp input.name{text-align:left;font-size:14px;padding:5px 8px;margin-top:3px}
+  .unit{color:var(--muted);font-weight:600}
+  .sub{grid-column:2 / -1;font-size:13px;color:var(--muted);margin-top:-4px}
+  .sub select{font-size:13px;padding:2px 4px;border-radius:6px;border:1px solid #cfcabe}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:.5px}
+  tr.total td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+  td .dot{display:inline-block;vertical-align:-2px;margin-right:6px}
+  .target{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:16px}
+  .target input{width:120px;padding:9px 10px;border:1px solid #cfcabe;border-radius:8px;font-size:16px;text-align:right}
+  .quot{font-size:13px;color:var(--muted);margin:2px 0 10px}
+  .presets button{border:1px solid #cfcabe;background:#fff;border-radius:16px;padding:4px 10px;cursor:pointer;font-size:13px}
+  .presets button:hover{background:#f3f4f6}
+  .cupwrap{text-align:center}
+  .cupwrap .cap{font-size:12px;color:var(--muted)}
+  .big{font-size:20px;font-weight:700}
+  body.teile .pct{display:none} body:not(.teile) .tl{display:none}
+  .comp .sub input{display:inline-block;width:80px;padding:4px 6px;border:1px solid #cfcabe;border-radius:6px;font-size:14px;text-align:right}
+  .mode.small label{min-width:120px;padding:7px 10px;font-weight:500;font-size:14px}
+  .ratio{margin-top:10px;padding:10px 12px;background:#f3f4f6;border-radius:8px;font-size:14px}
+  .ratio b{font-size:16px}
+  /* Hilfe */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+  .modal.open{display:flex}
+  .modal .box{background:#fff;border-radius:12px;max-width:640px;max-height:88vh;overflow:auto;padding:22px 24px;line-height:1.5}
+  .modal h3{margin-top:0}
+  .modal h4{margin:16px 0 4px}
+  .modal button{margin-top:12px;padding:8px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+  kbd{border:1px solid #bbb;border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mischungsverhältnis</h1>
+  <button class="help-btn" id="helpBtn" title="Hilfe (F1)">?</button>
+</header>
+
+<main>
+  <!-- Oberer Teil -->
+  <section class="card">
+    <h2>Mischtabelle</h2>
+    <div class="mode">
+      <label><input type="radio" name="mode" value="ml" checked> Volumetrisch (ml)</label>
+      <label><input type="radio" name="mode" value="g"> Gravimetrisch (g)</label>
+    </div>
+    <div class="mode small" style="margin-top:8px">
+      <label><input type="radio" name="angabe" value="pct" checked> Angabe in Prozent (%)</label>
+      <label><input type="radio" name="angabe" value="teile"> Angabe in Teilen (z.&nbsp;B. 100&nbsp;:&nbsp;15)</label>
+    </div>
+
+    <div class="grid" style="margin-top:14px">
+      <div>
+        <div class="comp">
+          <span class="dot" style="background:var(--c1)"></span>
+          <div class="lbl"><small>Komponente 1</small><b>Lack</b></div>
+          <input type="text" inputmode="decimal" id="lack" value="1000">
+          <span class="unit u">ml</span>
+          <div class="sub tl">Verhältnis-Teile Lack <input type="text" inputmode="decimal" id="t1" value="100"> Teile</div>
+        </div>
+        <div class="comp">
+          <span class="dot" style="background:var(--c2)"></span>
+          <div class="lbl"><small>Komponente 2</small><b>Verdünnung</b></div>
+          <div><input type="text" inputmode="decimal" id="p2" class="pct" value="" placeholder="0"><input type="text" inputmode="decimal" id="t2" class="tl" value="" placeholder="0"></div>
+          <span class="unit"><span class="pct">%</span><span class="tl">Teile</span></span>
+          <div class="sub pct">bezogen auf
+            <select id="base2">
+              <option value="lack">Lack</option>
+              <option value="lackh">Lack + Härter</option>
+            </select>
+          </div>
+        </div>
+        <div class="comp">
+          <span class="dot" style="background:var(--c3)"></span>
+          <div class="lbl"><small>Komponente 3</small><b>Härter</b></div>
+          <div><input type="text" inputmode="decimal" id="p3" class="pct" value="10"><input type="text" inputmode="decimal" id="t3" class="tl" value="15"></div>
+          <span class="unit"><span class="pct">%</span><span class="tl">Teile</span></span>
+        </div>
+        <div class="comp">
+          <span class="dot" style="background:var(--c4)"></span>
+          <div class="lbl"><small>Komponente 4 (optional)</small>
+            <input type="text" class="name" id="n4" placeholder="Bezeichnung, z. B. Mattierung">
+          </div>
+          <div><input type="text" inputmode="decimal" id="p4" class="pct" value="" placeholder="leer"><input type="text" inputmode="decimal" id="t4" class="tl" value="" placeholder="leer"></div>
+          <span class="unit"><span class="pct">%</span><span class="tl">Teile</span></span>
+        </div>
+
+        <div class="ratio" id="ratio"></div>
+        <h2 style="margin-top:18px">Ergebnis</h2>
+        <table id="tab1"></table>
+      </div>
+      <div class="cupwrap">
+        <div id="cup1"></div>
+        <div class="cap">Einfüllreihenfolge von unten nach oben</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Unterer Teil -->
+  <section class="card">
+    <h2>Ergebnis absolut – alle Komponenten auf Gesamtmenge</h2>
+    <div class="grid">
+      <div>
+        <div class="target">
+          Gesamtmenge
+          <input type="text" inputmode="decimal" id="target" value="1000">
+          <span class="unit u">ml</span>
+        </div>
+        <div class="presets" id="presets"></div>
+        <div class="quot" id="quot"></div>
+        <table id="tab2"></table>
+      </div>
+      <div class="cupwrap">
+        <div id="cup2"></div>
+        <div class="cap">Gesamtmenge im Messbecher</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="help">
+  <div class="box">
+    <h3>Hilfe – Mischungsverhältnis</h3>
+    <h4>1. Messart wählen</h4>
+    <p><b>Volumetrisch</b> rechnet in ml (Messbecher), <b>Gravimetrisch</b> in g (Waage). Wähle die Messart, für die der Lackhersteller sein Mischungsverhältnis angibt – Volumen- und Gewichtsangaben sind wegen unterschiedlicher Dichten <u>nicht</u> austauschbar.</p>
+    <h4>2. Komponenten eingeben</h4>
+    <ul>
+      <li><b>Lack</b>: Menge in ml bzw. g.</li>
+      <li><b>Verdünnung</b>: Prozent, wahlweise bezogen auf den Lack oder auf Lack + Härter (je nach Datenblatt).</li>
+      <li><b>Härter</b>: Prozent bezogen auf den Lack (z. B. 10 % → 1000 ml Lack + 100 ml Härter).</li>
+      <li><b>Komponente 4</b>: optional, Prozent bezogen auf den Lack. Leer lassen, wenn nicht benötigt.</li>
+    </ul>
+    <h4>Angabe in Teilen</h4>
+    <p>Steht im Datenblatt ein Verhältnis wie <b>100 : 15</b> oder <b>2 : 1</b>, wähle <b>„Angabe in Teilen“</b>. Trage bei „Verhältnis-Teile Lack“ die erste Zahl ein (z. B. 100 oder 2) und bei den anderen Komponenten deren Teile (z. B. 15 oder 1). Die Lackmenge in ml/g bleibt die Ausgangsmenge.</p>
+    <ul>
+      <li>100 : 15 → 1000 ml Lack + 150 ml Härter</li>
+      <li>2 : 1 → 1000 ml Lack + 500 ml Härter</li>
+      <li>100 : 15 : 10 → Härter 15 Teile, Verdünnung 10 Teile</li>
+    </ul>
+    <p>Teile beziehen sich immer direkt auf den Lack. Je nach Messart sind es Volumenteile (VT) oder Gewichtsteile (GT). Unter den Eingaben siehst du immer das Verhältnis und den Prozentwert bezogen auf den Lack.</p>
+    <p>Achtung: „15 % der Gesamtmischung“ ist etwas anderes als 100 : 15 – das wären 100 : 17,6.</p>
+    <p>Dezimalzahlen mit Komma oder Punkt (z. B. 7,5).</p>
+    <h4>3. Ergebnis</h4>
+    <p>Die Tabelle zeigt jede Menge einzeln und in der Spalte <b>„Füllen bis“</b> den Summenwert – praktisch, wenn alles nacheinander in denselben Becher bzw. auf dieselbe Waage kommt.</p>
+    <h4>4. Ergebnis absolut</h4>
+    <p>Gib die gewünschte Gesamtmenge ein (z. B. 1000 ml). Alle Komponenten werden durch den Quotienten <i>Summe der Mischung ÷ Gesamtmenge</i> geteilt, sodass am Ende genau die gewünschte Menge im gleichen Verhältnis entsteht.</p>
+    <h4>Messbecher</h4>
+    <p>Die Grafik zeigt die Anteile farbig in Einfüllreihenfolge. Die Skala passt sich der Menge automatisch an.</p>
+    <p>Eingaben werden im Browser gespeichert. Hilfe öffnen: <kbd>F1</kbd> oder <b>?</b> – schließen: <kbd>Esc</kbd>.</p>
+    <button id="closeHelp">Schließen</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const COLORS = ['#d9822b','#3b82c4','#c2410c','#6d9f3a'];
+const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; };
+const fmt = v => v.toLocaleString('de-DE', {minimumFractionDigits: v < 100 ? 1 : 0, maximumFractionDigits: 1});
+const fields = ['lack','p2','p3','p4','n4','target','base2','t1','t2','t3','t4'];
+
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem('mischung') || 'null');
+    if(!s) return;
+    fields.forEach(f => { if(s[f] !== undefined) $(f).value = s[f]; });
+    if(s.mode) document.querySelector(`input[name=mode][value=${s.mode}]`).checked = true;
+    if(s.angabe) document.querySelector(`input[name=angabe][value=${s.angabe}]`).checked = true;
+  }catch(e){}
+}
+function save(){
+  try{
+    const s = {mode: mode(), angabe: angabe()}; fields.forEach(f => s[f] = $(f).value);
+    localStorage.setItem('mischung', JSON.stringify(s));
+  }catch(e){}
+}
+const mode = () => document.querySelector('input[name=mode]:checked').value;
+const angabe = () => document.querySelector('input[name=angabe]:checked').value;
+const fmtR = v => v.toLocaleString('de-DE',{maximumFractionDigits:2});
+
+function niceCap(v){
+  const steps=[50,100,250,500,750,1000,1500,2000,2500,3000,4000,5000,7500,10000,15000,20000,25000,50000];
+  for(const s of steps) if(s >= v*1.08) return s;
+  return Math.ceil(v*1.08/10000)*10000;
+}
+
+function cupSVG(items, unit){
+  const total = items.reduce((a,c)=>a+c.v,0);
+  const cap = niceCap(Math.max(total, 1));
+  const W=240,H=330, top=40, bot=300, xlT=48, xrT=212, xlB=62, xrB=198;
+  const yOf = v => bot - (v/cap)*(bot-top);
+  const cup = `M${xlT},${top-12} L${xlB},${bot} Q${xlB},${bot+10} ${xlB+10},${bot+10} L${xrB-10},${bot+10} Q${xrB},${bot+10} ${xrB},${bot} L${xrT},${top-12}`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="240" height="330" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,sans-serif">
+  <defs><clipPath id="cp${unit}${Math.random().toString(36).slice(2,6)}"><path d="${cup} Z"/></clipPath>
+  <linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".25" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+  const cpId = s.match(/clipPath id="([^"]+)"/)[1];
+  // Griff
+  s += `<path d="M${xrT-2},${top+30} C${W-4},${top+30} ${W-4},${top+150} ${xrB+4},${top+160}" fill="none" stroke="#9aa5b1" stroke-width="7" stroke-linecap="round"/>`;
+  s += `<path d="${cup} Z" fill="#eef3f7"/>`;
+  s += `<g clip-path="url(#${cpId})">`;
+  let acc = 0;
+  items.forEach(c => {
+    if(c.v<=0) return;
+    const y1 = yOf(acc+c.v), y0 = yOf(acc);
+    s += `<rect x="0" y="${y1}" width="${W}" height="${y0-y1+ (acc===0?12:0.5)}" fill="${c.color}"/>`;
+    acc += c.v;
+  });
+  if(total>0) s += `<line x1="0" x2="${W}" y1="${yOf(total)}" y2="${yOf(total)}" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>`;
+  s += `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#gl)"/></g>`;
+  s += `<path d="${cup}" fill="none" stroke="#52606d" stroke-width="2.5" stroke-linejoin="round"/>`;
+  // Skala
+  const step = cap/10;
+  for(let i=1;i<=10;i++){
+    const v=i*step, y=yOf(v), t=(y-top+12)/(bot-top+12), xl = xlT + (xlB-xlT)*t;
+    const major = i%2===0;
+    s += `<line x1="${xl+2}" x2="${xl+(major?20:11)}" y1="${y}" y2="${y}" stroke="#1f2933" stroke-width="${major?1.6:1}"/>`;
+    if(major) s += `<text x="${xl+24}" y="${y+4}" font-size="11" fill="#1f2933">${fmt(v)}</text>`;
+  }
+  s += `<text x="${W/2}" y="${top-20}" font-size="12" text-anchor="middle" fill="#52606d">${unit}</text>`;
+  // Werte rechts in den Schichten
+  acc=0;
+  items.forEach(c=>{
+    if(c.v<=0) return;
+    const y1=yOf(acc+c.v), y0=yOf(acc);
+    if(y0-y1>=13) s += `<text x="${xrB-8}" y="${(y0+y1)/2+4}" font-size="11.5" font-weight="700" text-anchor="end" fill="#fff">${fmt(c.v)}</text>`;
+    acc+=c.v;
+  });
+  s += `<text x="${W/2}" y="${H-4}" font-size="14" font-weight="700" text-anchor="middle" fill="#1f2933">Σ ${fmt(total)} ${unit}</text>`;
+  return s + `</svg>`;
+}
+
+function table(items, unit){
+  let acc=0, total=items.reduce((a,c)=>a+c.v,0);
+  let h = `<tr><th>Komponente</th><th>Menge</th><th>Anteil</th><th>Füllen bis</th></tr>`;
+  items.forEach(c=>{
+    acc+=c.v;
+    h += `<tr><td><span class="dot" style="background:${c.color}"></span>${c.name}</td>
+      <td><b>${fmt(c.v)}</b> ${unit}</td><td>${total?fmt(c.v/total*100):'0'} %</td><td>${fmt(acc)} ${unit}</td></tr>`;
+  });
+  h += `<tr class="total"><td>Gesamt</td><td>${fmt(total)} ${unit}</td><td>100 %</td><td></td></tr>`;
+  return h;
+}
+
+function calc(){
+  const u = mode();
+  document.querySelectorAll('.u').forEach(e=>e.textContent=u);
+  const teile = angabe()==='teile';
+  document.body.classList.toggle('teile', teile);
+  const L = num($('lack').value);
+  let H, V, K4;
+  if(teile){
+    const t1 = num($('t1').value) || 100;
+    H = L*num($('t3').value)/t1; V = L*num($('t2').value)/t1; K4 = L*num($('t4').value)/t1;
+  } else {
+    const p2=num($('p2').value), p3=num($('p3').value), p4=num($('p4').value);
+    H = L*p3/100;
+    V = ($('base2').value==='lackh' ? (L+H) : L) * p2/100;
+    K4 = L*p4/100;
+  }
+  const items = [
+    {name:'Lack', v:L, color:COLORS[0]},
+    {name:'Verdünnung', v:V, color:COLORS[1]},
+    {name:'Härter', v:H, color:COLORS[2]},
+    {name:$('n4').value.trim()||'Komponente 4', v:K4, color:COLORS[3]}
+  ].filter((c,i)=> i===0 || c.v>0);
+
+  // Verhältnis-Anzeige (in Einfüllreihenfolge)
+  const n4 = $('n4').value.trim()||'Komp. 4';
+  if(L>0){
+    const parts = items.map(c => fmtR(c.v/L*100));
+    const names = items.map(c => c.name==='Komponente 4' ? n4 : c.name);
+    const pcts = items.slice(1).map(c => `${c.name==='Komponente 4'?n4:c.name} ${fmtR(c.v/L*100)} %`).join(' · ');
+    $('ratio').innerHTML = `Verhältnis (${names.join(' : ')}):<br><b>${parts.join(' : ')}</b>`
+      + (pcts ? `<br><span style="color:var(--muted)">entspricht bezogen auf Lack: ${pcts}</span>` : '');
+  } else $('ratio').textContent = 'Bitte Lackmenge eingeben.';
+
+  $('tab1').innerHTML = table(items,u);
+  $('cup1').innerHTML = cupSVG(items,u);
+
+  const total = items.reduce((a,c)=>a+c.v,0);
+  const T = num($('target').value);
+  const q = T>0 ? total/T : 0;
+  const items2 = items.map(c=>({...c, v: q? c.v/q : 0}));
+  $('quot').textContent = total>0 && T>0
+    ? `Quotient: ${fmt(total)} ÷ ${fmt(T)} = ${q.toLocaleString('de-DE',{maximumFractionDigits:4})} – jede Komponente wird durch diesen Wert geteilt.`
+    : 'Bitte Lackmenge und Gesamtmenge eingeben.';
+  $('tab2').innerHTML = table(items2,u);
+  $('cup2').innerHTML = cupSVG(items2,u);
+
+  $('presets').innerHTML = [250,500,1000,2000,5000].map(v=>`<button data-v="${v}">${fmt(v)} ${u}</button>`).join(' ');
+  save();
+}
+
+document.addEventListener('input', calc);
+document.addEventListener('change', calc);
+$('presets').addEventListener('click', e=>{ if(e.target.dataset.v){ $('target').value=e.target.dataset.v; calc(); }});
+
+const help = $('help');
+const openHelp = () => help.classList.add('open');
+const closeHelp = () => help.classList.remove('open');
+$('helpBtn').onclick = openHelp; $('closeHelp').onclick = closeHelp;
+help.addEventListener('click', e=>{ if(e.target===help) closeHelp(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='F1'){ e.preventDefault(); help.classList.contains('open')?closeHelp():openHelp(); }
+  if(e.key==='Escape') closeHelp();
+});
+window.addEventListener('help', e=>{ e.preventDefault(); openHelp(); }); // IE/Edge-Fallback
+
+load(); calc();
+</script>
+</body>
+</html>
